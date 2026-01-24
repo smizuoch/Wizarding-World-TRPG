@@ -286,6 +286,7 @@ h4 {
 .field input,
 .field select,
 .field textarea,
+.stat-row input,
 .hero-note,
 #ccfolia-output {
   border-radius: 12px;
@@ -300,6 +301,7 @@ h4 {
 .field input:focus,
 .field select:focus,
 .field textarea:focus,
+.stat-row input:focus,
 .hero-note:focus {
   outline: none;
   border-color: var(--accent);
