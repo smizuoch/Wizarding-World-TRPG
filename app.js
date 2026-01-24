@@ -18,6 +18,9 @@ const addCustomSkillButton = document.getElementById('add-custom-skill');
 const skillRowTemplate = document.getElementById('skill-row-template');
 const occupationPointsField = document.getElementById('occupation-points');
 const interestPointsField = document.getElementById('interest-points');
+const paletteField = document.querySelector('textarea[name="chat.palette"]');
+const generatePaletteButton = document.getElementById('generate-palette');
+const copyPaletteButton = document.getElementById('copy-palette');
 
 let currentId = null;
 
@@ -31,6 +34,8 @@ const statLabels = {
   pow: 'POW',
   edu: 'EDU',
 };
+
+const EXCLUDED_SKILLS = new Set(['クトゥルフ神話']);
 
 const createSkill = (name, base, options = {}) => ({
   name,
@@ -80,7 +85,6 @@ const SKILL_GROUPS = [
       createSkill('言語', 1, { locked: false }),
       createSkill('医学', 1),
       createSkill('オカルト', 5),
-      createSkill('クトゥルフ神話', 0),
       createSkill('芸術', 5, { locked: false }),
       createSkill('経理', 5),
       createSkill('考古学', 1),
@@ -156,6 +160,10 @@ function parseNumber(value) {
   return Number.isFinite(num) ? num : 0;
 }
 
+function isBlankValue(value) {
+  return value === '' || value === null || value === undefined;
+}
+
 function getStatsSnapshot() {
   return {
     str: parseNumber(getValue('stats.str')),
@@ -185,6 +193,10 @@ function rollDice(count, sides) {
     total += randomInt(sides) + 1;
   }
   return total;
+}
+
+function rollLuckValue() {
+  return rollDice(3, 6) * 5;
 }
 
 function computeSkillBase(skill, stats) {
@@ -219,7 +231,8 @@ function buildDefaultSkills(stats = getStatsSnapshot()) {
 }
 
 function normalizeSkills(rawSkills = []) {
-  const normalized = rawSkills.map((skill) => {
+  const filteredSkills = rawSkills.filter((skill) => !EXCLUDED_SKILLS.has(skill?.name));
+  const normalized = filteredSkills.map((skill) => {
     if (skill && Object.prototype.hasOwnProperty.call(skill, 'value')) {
       return {
         name: skill.name || '',
@@ -378,6 +391,7 @@ function collectSkills() {
         locked: row.dataset.locked === 'true',
       };
     })
+    .filter((skill) => !EXCLUDED_SKILLS.has(skill.name))
     .filter((skill) => skill.name || skill.base || skill.add || skill.note);
 }
 
@@ -444,10 +458,10 @@ function calcDerivedStats() {
   const stats = getStatsSnapshot();
   const hp = Math.floor((stats.con + stats.siz) / 10);
   const mp = stats.pow;
-  const san = stats.pow;
   const move = 8;
+  const initiative = stats.dex;
   const { build, damageBonus } = calcDamageBuild(stats.str, stats.siz);
-  return { hp, mp, san, move, build, damageBonus };
+  return { hp, mp, move, initiative, build, damageBonus };
 }
 
 function updateSkillPointTotals() {
@@ -617,10 +631,9 @@ function collectData() {
       hpMax: getValue('derived.hpMax'),
       mpCurrent: getValue('derived.mpCurrent'),
       mpMax: getValue('derived.mpMax'),
-      sanCurrent: getValue('derived.sanCurrent'),
-      sanMax: getValue('derived.sanMax'),
-      luckCurrent: getValue('derived.luckCurrent'),
-      luckMax: getValue('derived.luckMax'),
+      blessing: getValue('derived.blessing'),
+      curse: getValue('derived.curse'),
+      luck: getValue('derived.luck'),
       move: getValue('derived.move'),
       build: getValue('derived.build'),
       damageBonus: getValue('derived.damageBonus'),
@@ -685,10 +698,31 @@ function loadData(data) {
   setValue('derived.hpMax', data.derived?.hpMax);
   setValue('derived.mpCurrent', data.derived?.mpCurrent);
   setValue('derived.mpMax', data.derived?.mpMax);
-  setValue('derived.sanCurrent', data.derived?.sanCurrent);
-  setValue('derived.sanMax', data.derived?.sanMax);
-  setValue('derived.luckCurrent', data.derived?.luckCurrent);
-  setValue('derived.luckMax', data.derived?.luckMax);
+  const derived = data.derived || {};
+  if (Object.prototype.hasOwnProperty.call(derived, 'blessing')) {
+    setValue('derived.blessing', derived.blessing);
+  } else if (
+    Object.prototype.hasOwnProperty.call(derived, 'blessingCurrent') ||
+    Object.prototype.hasOwnProperty.call(derived, 'blessingMax')
+  ) {
+    setValue('derived.blessing', derived.blessingCurrent ?? derived.blessingMax ?? '');
+  }
+  if (Object.prototype.hasOwnProperty.call(derived, 'curse')) {
+    setValue('derived.curse', derived.curse);
+  } else if (
+    Object.prototype.hasOwnProperty.call(derived, 'curseCurrent') ||
+    Object.prototype.hasOwnProperty.call(derived, 'curseMax')
+  ) {
+    setValue('derived.curse', derived.curseCurrent ?? derived.curseMax ?? '');
+  }
+  if (Object.prototype.hasOwnProperty.call(derived, 'luck')) {
+    setValue('derived.luck', derived.luck);
+  } else if (
+    Object.prototype.hasOwnProperty.call(derived, 'luckCurrent') ||
+    Object.prototype.hasOwnProperty.call(derived, 'luckMax')
+  ) {
+    setValue('derived.luck', derived.luckCurrent ?? derived.luckMax ?? '');
+  }
   setValue('derived.move', data.derived?.move);
   setValue('derived.build', data.derived?.build);
   setValue('derived.damageBonus', data.derived?.damageBonus);
@@ -734,28 +768,36 @@ function recalcStats() {
 }
 
 function buildCocofolia(data) {
+  const buildStatus = (label, currentKey, maxKey) => {
+    const currentRaw = String(data.derived?.[currentKey] ?? '').trim();
+    const maxRaw = String(data.derived?.[maxKey] ?? '').trim();
+    return {
+      label,
+      value: parseNumber(currentRaw),
+      max: parseNumber(maxRaw),
+      include: currentRaw !== '' || maxRaw !== '',
+    };
+  };
+  const buildSingleStatus = (label, key) => {
+    const raw = String(data.derived?.[key] ?? '').trim();
+    const value = parseNumber(raw);
+    return {
+      label,
+      value,
+      max: value,
+      include: raw !== '',
+    };
+  };
+
   const status = [
-    {
-      label: 'HP',
-      value: parseNumber(data.derived.hpCurrent),
-      max: parseNumber(data.derived.hpMax),
-    },
-    {
-      label: 'MP',
-      value: parseNumber(data.derived.mpCurrent),
-      max: parseNumber(data.derived.mpMax),
-    },
-    {
-      label: 'SAN',
-      value: parseNumber(data.derived.sanCurrent),
-      max: parseNumber(data.derived.sanMax),
-    },
-    {
-      label: '幸運',
-      value: parseNumber(data.derived.luckCurrent),
-      max: parseNumber(data.derived.luckMax),
-    },
-  ].filter((item) => item.value || item.max);
+    buildStatus('HP', 'hpCurrent', 'hpMax'),
+    buildStatus('MP', 'mpCurrent', 'mpMax'),
+    buildSingleStatus('祝福', 'blessing'),
+    buildSingleStatus('呪い', 'curse'),
+    buildSingleStatus('幸運', 'luck'),
+  ]
+    .filter((item) => item.include)
+    .map(({ include, ...rest }) => rest);
 
   const params = [];
   Object.entries(data.stats).forEach(([key, value]) => {
@@ -804,6 +846,106 @@ function buildCocofolia(data) {
       color: data.profile.color || '#6a4524',
     },
   };
+}
+
+function getPaletteOptions() {
+  const skillMode =
+    document.querySelector('input[name="palette.skillMode"]:checked')?.value || 'changed';
+  const includeLuck =
+    document.querySelector('input[name="palette.includeLuck"]')?.checked ?? true;
+  const diceType =
+    document.querySelector('input[name="palette.diceType"]:checked')?.value || 'CC';
+  return { skillMode, includeLuck, diceType };
+}
+
+function getDicePrefix(diceType) {
+  if (diceType === '1D100') {
+    return '1D100<=';
+  }
+  if (diceType === 'CCB') {
+    return 'CCB<=';
+  }
+  return 'CC<=';
+}
+
+function resolveSkillValue(skill) {
+  const base = parseNumber(skill.base);
+  const add = parseNumber(skill.add);
+  const total = parseNumber(skill.total);
+  if (total) return total;
+  return base + add;
+}
+
+function buildChatPalette(data, options) {
+  const lines = [];
+  const dicePrefix = getDicePrefix(options.diceType);
+  const addLine = (target, label) => {
+    const value = String(target ?? '').trim();
+    if (!value || !label) return;
+    lines.push(`${dicePrefix}${value} ${label}`);
+  };
+
+  ['str', 'con', 'siz', 'dex', 'app', 'int', 'pow', 'edu'].forEach((key) => {
+    const value = parseNumber(data.stats[key]);
+    if (value) {
+      addLine(value, statLabels[key]);
+    }
+  });
+
+  addLine('{祝福}', '祝福');
+  addLine('{呪い}', '呪い');
+  if (options.includeLuck) {
+    addLine('{幸運}', '幸運');
+  }
+
+  data.lists.skills.forEach((skill) => {
+    if (!skill?.name || EXCLUDED_SKILLS.has(skill.name)) return;
+    const value = resolveSkillValue(skill);
+    if (!value) return;
+    if (options.skillMode === 'changed') {
+      const base = parseNumber(skill.base);
+      const add = parseNumber(skill.add);
+      if (add <= 0 && value === base) return;
+    }
+    addLine(value, skill.name);
+  });
+
+  return lines.join('\n');
+}
+
+function fillDerivedIfMissing() {
+  const derived = calcDerivedStats();
+  if (derived.hp) {
+    if (isBlankValue(getValue('derived.hpMax'))) {
+      setValue('derived.hpMax', derived.hp);
+    }
+    if (isBlankValue(getValue('derived.hpCurrent'))) {
+      setValue('derived.hpCurrent', derived.hp);
+    }
+  }
+  if (derived.mp) {
+    if (isBlankValue(getValue('derived.mpMax'))) {
+      setValue('derived.mpMax', derived.mp);
+    }
+    if (isBlankValue(getValue('derived.mpCurrent'))) {
+      setValue('derived.mpCurrent', derived.mp);
+    }
+  }
+  if (isBlankValue(getValue('derived.luck'))) {
+    setValue('derived.luck', rollLuckValue());
+  }
+  if (isBlankValue(getValue('derived.move'))) {
+    setValue('derived.move', derived.move);
+  }
+  if (isBlankValue(getValue('derived.build'))) {
+    setValue('derived.build', derived.build);
+  }
+  if (isBlankValue(getValue('derived.damageBonus'))) {
+    setValue('derived.damageBonus', derived.damageBonus);
+  }
+  if (derived.initiative && isBlankValue(getValue('derived.initiative'))) {
+    setValue('derived.initiative', derived.initiative);
+  }
 }
 
 function updatePreview(data) {
@@ -1006,15 +1148,13 @@ if (calcDerivedButton) {
         setValue('derived.mpCurrent', derived.mp);
       }
     }
-    if (derived.san) {
-      setValue('derived.sanMax', derived.san);
-      if (!getValue('derived.sanCurrent')) {
-        setValue('derived.sanCurrent', derived.san);
-      }
+    if (!getValue('derived.luck')) {
+      setValue('derived.luck', rollLuckValue());
     }
     setValue('derived.move', derived.move);
     setValue('derived.build', derived.build);
     setValue('derived.damageBonus', derived.damageBonus);
+    setValue('derived.initiative', derived.initiative);
     updatePreview(collectData());
   });
 }
@@ -1081,8 +1221,51 @@ if (importFile) {
   });
 }
 
+function generatePaletteText() {
+  const data = collectData();
+  const options = getPaletteOptions();
+  return buildChatPalette(data, options);
+}
+
+function setPaletteText(text) {
+  if (!paletteField) return;
+  paletteField.value = text;
+  updatePreview(collectData());
+}
+
+async function copyPaletteText(text) {
+  if (!paletteField) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    paletteField.select();
+    document.execCommand('copy');
+  }
+}
+
+if (generatePaletteButton) {
+  generatePaletteButton.addEventListener('click', () => {
+    setPaletteText(generatePaletteText());
+  });
+}
+
+if (copyPaletteButton) {
+  copyPaletteButton.addEventListener('click', async () => {
+    if (paletteField && !paletteField.value.trim()) {
+      setPaletteText(generatePaletteText());
+    }
+    await copyPaletteText(paletteField?.value || '');
+  });
+}
+
 copyCcfButton.addEventListener('click', async () => {
   if (!ccfoliaOutput) return;
+  fillDerivedIfMissing();
+  if (paletteField) {
+    setPaletteText(generatePaletteText());
+  } else {
+    updatePreview(collectData());
+  }
   try {
     await navigator.clipboard.writeText(ccfoliaOutput.value);
   } catch (error) {

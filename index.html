@@ -246,20 +246,16 @@
                 <input type="number" name="derived.mpMax" placeholder="40" />
               </label>
               <label class="field">
-                <span>SAN 現在</span>
-                <input type="number" name="derived.sanCurrent" placeholder="60" />
+                <span>祝福</span>
+                <input type="number" name="derived.blessing" placeholder="25" value="25" />
               </label>
               <label class="field">
-                <span>SAN 最大</span>
-                <input type="number" name="derived.sanMax" placeholder="99" />
+                <span>呪い</span>
+                <input type="number" name="derived.curse" placeholder="0" value="0" />
               </label>
               <label class="field">
-                <span>幸運 現在</span>
-                <input type="number" name="derived.luckCurrent" placeholder="45" />
-              </label>
-              <label class="field">
-                <span>幸運 最大</span>
-                <input type="number" name="derived.luckMax" placeholder="60" />
+                <span>幸運</span>
+                <input type="number" name="derived.luck" placeholder="45" />
               </label>
               <label class="field">
                 <span>移動率</span>
@@ -495,6 +491,47 @@
             <div class="card-head">
               <h2>チャットパレット</h2>
               <span class="tag">ココフォリア出力対応</span>
+            </div>
+            <div class="palette-controls">
+              <div class="palette-options">
+                <div class="option-group">
+                  <p>技能</p>
+                  <label class="option-item">
+                    <input type="radio" name="palette.skillMode" value="changed" checked />
+                    変更された技能を出力
+                  </label>
+                  <label class="option-item">
+                    <input type="radio" name="palette.skillMode" value="all" />
+                    すべての技能を出力
+                  </label>
+                </div>
+                <div class="option-group">
+                  <p>幸運ダイス</p>
+                  <label class="option-item">
+                    <input type="checkbox" name="palette.includeLuck" checked />
+                    幸運ダイスを出力
+                  </label>
+                </div>
+                <div class="option-group">
+                  <p>ダイス</p>
+                  <label class="option-item">
+                    <input type="radio" name="palette.diceType" value="CC" checked />
+                    CC
+                  </label>
+                  <label class="option-item">
+                    <input type="radio" name="palette.diceType" value="CCB" />
+                    CCB
+                  </label>
+                  <label class="option-item">
+                    <input type="radio" name="palette.diceType" value="1D100" />
+                    1D100
+                  </label>
+                </div>
+              </div>
+              <div class="palette-actions">
+                <button class="btn ghost" type="button" id="generate-palette">チャットパレット自動作成</button>
+                <button class="btn outline" type="button" id="copy-palette">チャットパレットをコピー</button>
+              </div>
             </div>
             <label class="field">
               <span>コマンド</span>
