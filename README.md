@@ -1,5 +1,17 @@
 # Wizarding-World-TRPG
 
+## キャラクタークリエイター (GitHub Pages対応)
+- `index.html` を開くとキャラクリUIが表示されます。
+- 「ローカル保存」はブラウザの `localStorage` に保存されます（DB保存なし）。
+- 「JSON書き出し」で保存データをファイル化できます。
+- 「回覧モード」→「保存データを読み込み」でJSONを読み込み、閲覧/再編集できます。
+- 「ココフォリア出力をコピー」でクリップボード用JSONを取得できます。
+
+### GitHub Pagesで公開する手順
+1. このリポジトリのルートに `index.html` / `styles.css` / `app.js` がある状態でpush
+2. GitHubの Settings → Pages で `Branch: main` / `/(root)` を選択
+3. 数分後にURLが発行されます
+
 ## "Wizarding-World-TRPG"とは
 "Wizarding-World-TRPG"は、魔法の才能がある者たちが世界の秘密や恐るべき闇の力に立ち向かう、神秘と挑戦のロールプレイングゲームである。\
 揺るぎない心を持つ魔法使いとなり、チームとなって協力して、謎多き危険な場所へと旅し、恐ろしい陰謀を見つけ出し、闇の魔法使いに立ち向かう。  

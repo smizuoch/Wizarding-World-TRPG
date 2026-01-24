@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wizarding-World-TRPG キャラクタークリエイター</title>
+    <meta
+      name="description"
+      content="Wizarding-World-TRPG用のキャラクター作成・回覧・ココフォリア出力ができるローカル保存対応UI"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-mode="edit">
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Wizarding-World-TRPG</p>
+        <h1>キャラクタークリエイター</h1>
+        <p class="lead">
+          Wizarding-World-TRPG向けの項目をまとめたキャラクリUI。保存はローカルのみ。
+        </p>
+        <div class="hero-actions">
+          <button class="btn primary" type="button" id="save-local">ローカル保存</button>
+          <button class="btn ghost" type="button" id="export-json">JSON書き出し</button>
+          <button class="btn outline" type="button" id="viewer-toggle">回覧モード</button>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-inner">
+          <p class="mini-title">今日のひとこと</p>
+          <textarea
+            class="hero-note"
+            name="profile.catchphrase"
+            id="catchphrase"
+            placeholder="例：夜明け前の灯火"
+          ></textarea>
+          <div class="hero-badges">
+            <span class="badge">ローカル保存</span>
+            <span class="badge">回覧/編集</span>
+            <span class="badge">ココフォリア対応</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <h2>セクション</h2>
+          <nav class="nav">
+            <a href="#profile">基本情報</a>
+            <a href="#attributes">能力値</a>
+            <a href="#derived">副次ステータス</a>
+            <a href="#skills">技能</a>
+            <a href="#spells">呪文</a>
+            <a href="#items">持ち物</a>
+            <a href="#bonds">関係/絆</a>
+            <a href="#notes">来歴/メモ</a>
+            <a href="#palette">チャットパレット</a>
+            <a href="#viewer">回覧 / ココフォリア</a>
+          </nav>
+        </div>
+        <div class="sidebar-section">
+          <h2>保存済み</h2>
+          <div id="saved-list" class="saved-list">
+            <p class="muted">まだ保存がありません。</p>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <h2>操作</h2>
+          <button class="btn small" type="button" id="clear-form">新規作成</button>
+          <button class="btn small outline" type="button" id="copy-ccfolia">ココフォリア出力をコピー</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <form id="character-form" autocomplete="off">
+          <section id="profile" class="card reveal" style="--i: 1">
+            <div class="card-head">
+              <h2>基本情報</h2>
+              <span class="tag">Wizarding-World-TRPG</span>
+            </div>
+            <div class="grid cols-3">
+              <label class="field">
+                <span>キャラクター名</span>
+                <input type="text" name="profile.name" placeholder="例：エスター・グレイ" />
+              </label>
+              <label class="field">
+                <span>読み</span>
+                <input type="text" name="profile.kana" placeholder="例：えすたー ぐれい" />
+              </label>
+              <label class="field">
+                <span>プレイヤー名</span>
+                <input type="text" name="profile.player" placeholder="例：Nox" />
+              </label>
+              <label class="field">
+                <span>ハウス</span>
+                <select name="profile.house">
+                  <option value="">未選択</option>
+                  <option value="グリフィンドール">グリフィンドール</option>
+                  <option value="スリザリン">スリザリン</option>
+                  <option value="レイブンクロー">レイブンクロー</option>
+                  <option value="ハッフルパフ">ハッフルパフ</option>
+                  <option value="その他">その他</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>学年/所属</span>
+                <input type="text" name="profile.year" placeholder="例：5年生 / 魔法省呪文局" />
+              </label>
+              <label class="field">
+                <span>血統</span>
+                <input type="text" name="profile.blood" placeholder="例：純血 / マグル生まれ" />
+              </label>
+              <label class="field">
+                <span>職業/役割</span>
+                <input type="text" name="profile.job" placeholder="例：呪文学者" />
+              </label>
+              <label class="field">
+                <span>年齢</span>
+                <input type="number" name="profile.age" min="0" placeholder="例：17" />
+              </label>
+              <label class="field">
+                <span>性別/呼称</span>
+                <input type="text" name="profile.gender" placeholder="例：彼 / 彼女 / they" />
+              </label>
+              <label class="field">
+                <span>身長/体格</span>
+                <input type="text" name="profile.height" placeholder="例：168cm / 細身" />
+              </label>
+              <label class="field">
+                <span>杖</span>
+                <input type="text" name="profile.wand" placeholder="例：ヒイラギ / 10と3/4インチ" />
+              </label>
+              <label class="field">
+                <span>守護霊</span>
+                <input type="text" name="profile.patronus" placeholder="例：フクロウ" />
+              </label>
+              <label class="field">
+                <span>相棒/使い魔</span>
+                <input type="text" name="profile.familiar" placeholder="例：猫のアッシュ" />
+              </label>
+              <label class="field">
+                <span>イメージカラー</span>
+                <input type="color" name="profile.color" value="#6a4524" />
+              </label>
+              <label class="field">
+                <span>立ち絵URL（任意）</span>
+                <input type="url" name="profile.imageUrl" placeholder="https://" />
+              </label>
+              <label class="field wide">
+                <span>外見</span>
+                <input type="text" name="profile.appearance" placeholder="例：銀髪、切れ長の目" />
+              </label>
+              <label class="field wide">
+                <span>コンセプト</span>
+                <input type="text" name="profile.concept" placeholder="例：禁書を渡り歩く迷い子" />
+              </label>
+            </div>
+          </section>
+
+          <section id="attributes" class="card reveal" style="--i: 2">
+            <div class="card-head">
+              <h2>能力値</h2>
+              <div class="inline-actions">
+                <span class="tag">フル / 1/2 / 1/5</span>
+                <button class="btn ghost" type="button" id="roll-stats">能力値を自動振り</button>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-row" data-stat="STR">
+                <span class="stat-label">STR</span>
+                <input type="number" name="stats.str" data-stat-base placeholder="40" />
+                <input type="number" name="stats.strHalf" data-stat-half placeholder="20" readonly />
+                <input type="number" name="stats.strFifth" data-stat-fifth placeholder="8" readonly />
+              </div>
+              <div class="stat-row" data-stat="CON">
+                <span class="stat-label">CON</span>
+                <input type="number" name="stats.con" data-stat-base placeholder="50" />
+                <input type="number" name="stats.conHalf" data-stat-half placeholder="25" readonly />
+                <input type="number" name="stats.conFifth" data-stat-fifth placeholder="10" readonly />
+              </div>
+              <div class="stat-row" data-stat="SIZ">
+                <span class="stat-label">SIZ</span>
+                <input type="number" name="stats.siz" data-stat-base placeholder="50" />
+                <input type="number" name="stats.sizHalf" data-stat-half placeholder="25" readonly />
+                <input type="number" name="stats.sizFifth" data-stat-fifth placeholder="10" readonly />
+              </div>
+              <div class="stat-row" data-stat="DEX">
+                <span class="stat-label">DEX</span>
+                <input type="number" name="stats.dex" data-stat-base placeholder="60" />
+                <input type="number" name="stats.dexHalf" data-stat-half placeholder="30" readonly />
+                <input type="number" name="stats.dexFifth" data-stat-fifth placeholder="12" readonly />
+              </div>
+              <div class="stat-row" data-stat="APP">
+                <span class="stat-label">APP</span>
+                <input type="number" name="stats.app" data-stat-base placeholder="50" />
+                <input type="number" name="stats.appHalf" data-stat-half placeholder="25" readonly />
+                <input type="number" name="stats.appFifth" data-stat-fifth placeholder="10" readonly />
+              </div>
+              <div class="stat-row" data-stat="INT">
+                <span class="stat-label">INT</span>
+                <input type="number" name="stats.int" data-stat-base placeholder="70" />
+                <input type="number" name="stats.intHalf" data-stat-half placeholder="35" readonly />
+                <input type="number" name="stats.intFifth" data-stat-fifth placeholder="14" readonly />
+              </div>
+              <div class="stat-row" data-stat="POW">
+                <span class="stat-label">POW</span>
+                <input type="number" name="stats.pow" data-stat-base placeholder="60" />
+                <input type="number" name="stats.powHalf" data-stat-half placeholder="30" readonly />
+                <input type="number" name="stats.powFifth" data-stat-fifth placeholder="12" readonly />
+              </div>
+              <div class="stat-row" data-stat="EDU">
+                <span class="stat-label">EDU</span>
+                <input type="number" name="stats.edu" data-stat-base placeholder="60" />
+                <input type="number" name="stats.eduHalf" data-stat-half placeholder="30" readonly />
+                <input type="number" name="stats.eduFifth" data-stat-fifth placeholder="12" readonly />
+              </div>
+            </div>
+          </section>
+
+          <section id="derived" class="card reveal" style="--i: 3">
+            <div class="card-head">
+              <h2>副次ステータス</h2>
+              <div class="inline-actions">
+                <span class="tag">バトル/判定用</span>
+                <button class="btn ghost" type="button" id="calc-derived">自動計算</button>
+              </div>
+            </div>
+            <div class="grid cols-3">
+              <label class="field">
+                <span>HP 現在</span>
+                <input type="number" name="derived.hpCurrent" placeholder="10" />
+              </label>
+              <label class="field">
+                <span>HP 最大</span>
+                <input type="number" name="derived.hpMax" placeholder="12" />
+              </label>
+              <label class="field">
+                <span>MP 現在</span>
+                <input type="number" name="derived.mpCurrent" placeholder="40" />
+              </label>
+              <label class="field">
+                <span>MP 最大</span>
+                <input type="number" name="derived.mpMax" placeholder="40" />
+              </label>
+              <label class="field">
+                <span>SAN 現在</span>
+                <input type="number" name="derived.sanCurrent" placeholder="60" />
+              </label>
+              <label class="field">
+                <span>SAN 最大</span>
+                <input type="number" name="derived.sanMax" placeholder="99" />
+              </label>
+              <label class="field">
+                <span>幸運 現在</span>
+                <input type="number" name="derived.luckCurrent" placeholder="45" />
+              </label>
+              <label class="field">
+                <span>幸運 最大</span>
+                <input type="number" name="derived.luckMax" placeholder="60" />
+              </label>
+              <label class="field">
+                <span>移動率</span>
+                <input type="number" name="derived.move" placeholder="8" />
+              </label>
+              <label class="field">
+                <span>ビルド</span>
+                <input type="text" name="derived.build" placeholder="+1" />
+              </label>
+              <label class="field">
+                <span>ダメージボーナス</span>
+                <input type="text" name="derived.damageBonus" placeholder="+1D4" />
+              </label>
+              <label class="field">
+                <span>イニシアチブ</span>
+                <input type="number" name="derived.initiative" placeholder="12" />
+              </label>
+              <label class="field wide">
+                <span>装備/制服</span>
+                <input type="text" name="derived.outfit" placeholder="例：ホグワーツ制服 / 旅装" />
+              </label>
+            </div>
+          </section>
+
+          <section id="skills" class="card reveal" style="--i: 4">
+            <div class="card-head">
+              <h2>技能</h2>
+              <button class="btn ghost" type="button" id="add-custom-skill">+ 追加</button>
+            </div>
+            <div class="skill-meta">
+              <div class="skill-point">
+                <div class="skill-point-label">
+                  <span>職業P</span>
+                  <small>EDU×4</small>
+                </div>
+                <input type="number" id="occupation-points" readonly />
+              </div>
+              <div class="skill-point">
+                <div class="skill-point-label">
+                  <span>興味P</span>
+                  <small>INT×2</small>
+                </div>
+                <input type="number" id="interest-points" readonly />
+              </div>
+            </div>
+            <div class="skill-table">
+              <div class="skill-row header">
+                <span>成長</span>
+                <span>技能名</span>
+                <span>初期値</span>
+                <span>追加</span>
+                <span>合計</span>
+                <span>備考</span>
+                <span></span>
+              </div>
+              <div class="skill-group">
+                <div class="skill-group-title">一般技能</div>
+                <div class="skill-rows" data-skill-rows="general"></div>
+              </div>
+              <div class="skill-group">
+                <div class="skill-group-title">魔法技能（初期値 1）</div>
+                <div class="skill-rows" data-skill-rows="magic"></div>
+              </div>
+              <div class="skill-group">
+                <div class="skill-group-title">追加技能</div>
+                <div class="skill-rows" data-skill-rows="custom"></div>
+              </div>
+            </div>
+            <template id="skill-row-template">
+              <div class="skill-row" data-skill-row>
+                <label class="skill-checkbox">
+                  <input type="checkbox" data-skill-growth />
+                </label>
+                <input class="skill-input" type="text" data-skill-name />
+                <input class="skill-input" type="number" data-skill-base />
+                <input class="skill-input" type="number" data-skill-add />
+                <input class="skill-input" type="number" data-skill-total readonly />
+                <input class="skill-input" type="text" data-skill-note />
+                <button class="icon-btn" type="button" data-action="remove-skill">削除</button>
+              </div>
+            </template>
+          </section>
+
+          <section id="spells" class="card reveal" style="--i: 5" data-repeater="spells">
+            <div class="card-head">
+              <h2>呪文/魔法</h2>
+              <button class="btn ghost" type="button" data-action="add-row">+ 追加</button>
+            </div>
+            <div class="repeater" data-rows>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>呪文名</span>
+                  <input type="text" data-field="name" placeholder="例：ルーモス" />
+                </label>
+                <label class="field">
+                  <span>消費/難易度</span>
+                  <input type="text" data-field="cost" placeholder="例：MP 2" />
+                </label>
+                <label class="field wide">
+                  <span>効果</span>
+                  <input type="text" data-field="effect" placeholder="例：杖先に光" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </div>
+            <template data-template>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>呪文名</span>
+                  <input type="text" data-field="name" />
+                </label>
+                <label class="field">
+                  <span>消費/難易度</span>
+                  <input type="text" data-field="cost" />
+                </label>
+                <label class="field wide">
+                  <span>効果</span>
+                  <input type="text" data-field="effect" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </template>
+          </section>
+
+          <section id="items" class="card reveal" style="--i: 6" data-repeater="items">
+            <div class="card-head">
+              <h2>持ち物</h2>
+              <button class="btn ghost" type="button" data-action="add-row">+ 追加</button>
+            </div>
+            <div class="repeater" data-rows>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>アイテム</span>
+                  <input type="text" data-field="name" placeholder="例：魔法書" />
+                </label>
+                <label class="field">
+                  <span>数量</span>
+                  <input type="number" data-field="qty" placeholder="1" />
+                </label>
+                <label class="field wide">
+                  <span>メモ</span>
+                  <input type="text" data-field="note" placeholder="例：禁書" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </div>
+            <template data-template>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>アイテム</span>
+                  <input type="text" data-field="name" />
+                </label>
+                <label class="field">
+                  <span>数量</span>
+                  <input type="number" data-field="qty" />
+                </label>
+                <label class="field wide">
+                  <span>メモ</span>
+                  <input type="text" data-field="note" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </template>
+          </section>
+
+          <section id="bonds" class="card reveal" style="--i: 7" data-repeater="bonds">
+            <div class="card-head">
+              <h2>関係/絆</h2>
+              <button class="btn ghost" type="button" data-action="add-row">+ 追加</button>
+            </div>
+            <div class="repeater" data-rows>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>相手</span>
+                  <input type="text" data-field="name" placeholder="例：同級生のローラ" />
+                </label>
+                <label class="field">
+                  <span>関係</span>
+                  <input type="text" data-field="relation" placeholder="例：恩人" />
+                </label>
+                <label class="field wide">
+                  <span>詳細</span>
+                  <input type="text" data-field="note" placeholder="例：禁書庫で助けられた" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </div>
+            <template data-template>
+              <div class="row" data-row>
+                <label class="field">
+                  <span>相手</span>
+                  <input type="text" data-field="name" />
+                </label>
+                <label class="field">
+                  <span>関係</span>
+                  <input type="text" data-field="relation" />
+                </label>
+                <label class="field wide">
+                  <span>詳細</span>
+                  <input type="text" data-field="note" />
+                </label>
+                <button class="icon-btn" type="button" data-action="remove-row">削除</button>
+              </div>
+            </template>
+          </section>
+
+          <section id="notes" class="card reveal" style="--i: 8">
+            <div class="card-head">
+              <h2>来歴/メモ</h2>
+              <span class="tag">物語の核</span>
+            </div>
+            <div class="grid cols-2">
+              <label class="field">
+                <span>来歴</span>
+                <textarea name="notes.backstory" rows="6" placeholder="過去の出来事、家系、きっかけ"></textarea>
+              </label>
+              <label class="field">
+                <span>性格/信条</span>
+                <textarea name="notes.personality" rows="6" placeholder="口癖、価値観、恐れていること"></textarea>
+              </label>
+              <label class="field">
+                <span>メモ</span>
+                <textarea name="notes.memo" rows="6" placeholder="セッション用の覚書"></textarea>
+              </label>
+              <label class="field">
+                <span>目標</span>
+                <textarea name="notes.goal" rows="6" placeholder="短期/長期で目指していること"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section id="palette" class="card reveal" style="--i: 9">
+            <div class="card-head">
+              <h2>チャットパレット</h2>
+              <span class="tag">ココフォリア出力対応</span>
+            </div>
+            <label class="field">
+              <span>コマンド</span>
+              <textarea
+                name="chat.palette"
+                rows="8"
+                placeholder="例：\n1D100<=60 呪文学\n1D100<=45 目星"
+              ></textarea>
+            </label>
+          </section>
+        </form>
+
+        <section id="viewer" class="card viewer reveal" style="--i: 10">
+          <div class="card-head">
+            <h2>回覧 / ココフォリア</h2>
+            <div class="inline-actions">
+              <button class="btn outline" type="button" id="edit-toggle">編集に戻る</button>
+              <label class="btn ghost" for="import-file">保存データを読み込み</label>
+              <input id="import-file" type="file" accept="application/json" hidden />
+            </div>
+          </div>
+          <div class="viewer-grid">
+            <div class="viewer-card">
+              <div class="viewer-head">
+                <h3 id="preview-name">名無しの魔法使い</h3>
+                <p id="preview-meta" class="muted">読み込み待ち</p>
+              </div>
+              <div id="preview-tags" class="tag-row"></div>
+              <div class="viewer-section">
+                <h4>能力値</h4>
+                <ul id="preview-stats" class="mini-list"></ul>
+              </div>
+              <div class="viewer-section">
+                <h4>技能</h4>
+                <ul id="preview-skills" class="mini-list"></ul>
+              </div>
+              <div class="viewer-section">
+                <h4>呪文</h4>
+                <ul id="preview-spells" class="mini-list"></ul>
+              </div>
+              <div class="viewer-section">
+                <h4>持ち物</h4>
+                <ul id="preview-items" class="mini-list"></ul>
+              </div>
+              <div class="viewer-section">
+                <h4>メモ</h4>
+                <p id="preview-notes" class="preview-notes"></p>
+              </div>
+            </div>
+            <div class="viewer-card">
+              <div class="viewer-section">
+                <h4>ココフォリア出力</h4>
+                <textarea id="ccfolia-output" rows="18" readonly></textarea>
+                <p class="muted">出力をコピーして、ココフォリアの「キャラクターを作成」>「クリップボード入力」に貼り付けてください。</p>
+              </div>
+              <div class="viewer-section">
+                <h4>ローカル保存メモ</h4>
+                <p class="muted">保存はこの端末のブラウザ内のみ。クラウド同期やDB保存は行いません。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="footer">
+      <p>Wizarding-World-TRPG Character Creator - Local Save Edition</p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
