@@ -1,5 +1,25 @@
 const STORAGE_KEY = 'wwtrpg.characters.v1';
 const CURRENT_KEY = 'wwtrpg.currentId.v1';
+const DAILY_QUOTE_STORAGE_KEY = 'wwtrpg.dailyQuote.v1';
+
+const DAILY_QUOTES = [
+  '「夢に耽ったり、生きることを忘れてしまうのはよくない。それをよく覚えておきなさい」',
+  '「結局、きちんと整理された心を持つ者にとっては、死は次の大いなる冒険にすぎないのじゃ」',
+  '「ハリー、ヴォルデモートと呼びなさい。ものには必ず適切な名前を使いなさい。名前を恐れていると、そのもの自身に対する恐れも大きくなる」',
+  '「真実か」「それはとても美しくも恐ろしいものじゃ。だからこそ注意深く扱わなければなるまい。」',
+  '「ハリー、自分が本当に何者かを示すのは、持っている能力ではなく、自分がどのような選択をするかということなんじゃよ」',
+  '「愛する人が死んだ時、その人は永久に我々のそばを離れると、そう思うかね？大変な状況にある時、いつにも増して鮮明に、その人たちのことを思い出しはせんかね？」',
+  '「我々の行動の因果というものは、常に複雑で、多様なものじゃ。だから、未来を予測するというのは、まさに非常に難しいことなのじゃよ......」',
+  '「好奇心は罪ではない。しかし、好奇心は慎重に使わんとな......まことに、そうなのじゃよ......」',
+  '「目的を同じくし、心を開くならば、習慣や言葉の違いはまったく問題にはならぬ」',
+  '「納得してこそ初めて受け入れられるのじゃ。受け入れてこそ初めて回復がある。」',
+  '「大事なのはどう生まれついたかではなく、どう育ったかなのだ」',
+  '「若い者には、老いた者がどのように考え、感じるかはわからぬものじゃ。しかし、年老いた者が、若いということがなんであるかを忘れてしまうのは罪じゃ......そしてわしは、最近、忘れてしまったようじゃ......」',
+  '「あからさまな憎しみより、無関心や無頓着のほうが、往々にしてより大きな打撃を与えるものじゃ......」',
+  '「我々が、死や暗闇に対して恐れを抱くのは、それらを知らぬからじゃ。それ以外の何ものでもない」',
+  '「暴君たる者が、自ら虐げている民をどんなに恐れているか、わかるかね？暴君は、多くの虐げられた者の中から、ある日必ず誰かが立ち上がり、反撃することを認識しておるのじゃ。」',
+  '「死者を哀れむではない、ハリー。生きている者を哀れむのじゃ。とくに愛なくして生きている者たちを。」',
+];
 
 const form = document.getElementById('character-form');
 const saveButton = document.getElementById('save-local');
@@ -197,6 +217,47 @@ function rollDice(count, sides) {
 
 function rollLuckValue() {
   return rollDice(3, 6) * 5;
+}
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDailyQuote() {
+  if (!DAILY_QUOTES.length) return '';
+  const today = getLocalDateKey();
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(DAILY_QUOTE_STORAGE_KEY) || 'null');
+    const cachedIndex = Number(cached?.index);
+    if (
+      cached?.date === today &&
+      Number.isInteger(cachedIndex) &&
+      cachedIndex >= 0 &&
+      cachedIndex < DAILY_QUOTES.length
+    ) {
+      return DAILY_QUOTES[cachedIndex];
+    }
+  } catch (error) {
+    // Ignore localStorage parse errors and create a new quote for today.
+  }
+
+  const index = randomInt(DAILY_QUOTES.length);
+  try {
+    localStorage.setItem(DAILY_QUOTE_STORAGE_KEY, JSON.stringify({ date: today, index }));
+  } catch (error) {
+    // Ignore storage write errors; fallback still returns a quote.
+  }
+  return DAILY_QUOTES[index];
+}
+
+function applyDailyQuote() {
+  if (!catchphraseField) return;
+  catchphraseField.value = getDailyQuote();
+  catchphraseField.readOnly = true;
 }
 
 function computeSkillBase(skill, stats) {
@@ -681,9 +742,7 @@ function loadData(data) {
   setValue('profile.imageUrl', data.profile?.imageUrl);
   setValue('profile.appearance', data.profile?.appearance);
   setValue('profile.concept', data.profile?.concept);
-  if (catchphraseField) {
-    catchphraseField.value = data.profile?.catchphrase || '';
-  }
+  applyDailyQuote();
 
   setValue('stats.str', data.stats?.str);
   setValue('stats.con', data.stats?.con);
@@ -1186,9 +1245,7 @@ clearButton.addEventListener('click', () => {
   setRepeater('spells', []);
   setRepeater('items', []);
   setRepeater('bonds', []);
-  if (catchphraseField) {
-    catchphraseField.value = '';
-  }
+  applyDailyQuote();
   recalcStats();
   updatePreview(collectData());
   setMode('edit');
@@ -1293,5 +1350,6 @@ if (initialData) {
 } else {
   recalcStats();
   resetSkillsToDefault();
+  applyDailyQuote();
   updatePreview(collectData());
 }

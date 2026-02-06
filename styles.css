@@ -124,6 +124,7 @@ h4 {
 .hero-note {
   width: 100%;
   min-height: 120px;
+  resize: none;
   border-radius: 12px;
   border: 1px dashed var(--stroke);
   padding: 12px;
