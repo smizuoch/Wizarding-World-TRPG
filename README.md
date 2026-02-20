@@ -1,5 +1,7 @@
 # Wizarding-World-TRPG
 
+# Betaテスト中です！
+
 ## キャラクタークリエイター (GitHub Pages対応)
 - `index.html` を開くとキャラクリUIが表示されます。
 - 「ローカル保存」はブラウザの `localStorage` に保存されます（DB保存なし）。
