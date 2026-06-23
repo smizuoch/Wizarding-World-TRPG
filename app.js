@@ -33,7 +33,7 @@ const copyCcfButton = document.getElementById('copy-ccfolia');
 const catchphraseField = document.getElementById('catchphrase');
 const ccfoliaOutput = document.getElementById('ccfolia-output');
 const calcDerivedButton = document.getElementById('calc-derived');
-const rollStatsButton = document.getElementById('roll-stats');
+const applyStandardStatsButton = document.getElementById('apply-standard-stats');
 const addCustomSkillButton = document.getElementById('add-custom-skill');
 const skillRowTemplate = document.getElementById('skill-row-template');
 const occupationPointsField = document.getElementById('occupation-points');
@@ -56,6 +56,10 @@ const statLabels = {
 };
 
 const EXCLUDED_SKILLS = new Set(['クトゥルフ神話']);
+const SKILL_NAME_ALIASES = new Map([
+  ['乗馬', '騎乗'],
+  ['言語', 'ほかの言語'],
+]);
 
 const createSkill = (name, base, options = {}) => ({
   name,
@@ -74,7 +78,7 @@ const SKILL_GROUPS = [
       createSkill('回避', null, { baseMode: 'dexHalf' }),
       createSkill('近接戦闘', 25, { locked: false }),
       createSkill('投擲', 20),
-      createSkill('射撃', 0, { locked: false }),
+      createSkill('射撃', 20, { locked: false }),
       createSkill('応急手当', 30),
       createSkill('鍵開け', 1),
       createSkill('手さばき', 10),
@@ -89,7 +93,7 @@ const SKILL_GROUPS = [
       createSkill('運転', 20, { locked: false }),
       createSkill('機械修理', 10),
       createSkill('重機械操作', 1),
-      createSkill('乗馬', 5),
+      createSkill('騎乗', 5),
       createSkill('水泳', 20),
       createSkill('製作', 5, { locked: false }),
       createSkill('操縦', 1, { locked: false }),
@@ -102,7 +106,7 @@ const SKILL_GROUPS = [
       createSkill('母国語', null, { baseMode: 'edu', locked: false }),
       createSkill('威圧', 15),
       createSkill('魅惑', 15),
-      createSkill('言語', 1, { locked: false }),
+      createSkill('ほかの言語', 1, { locked: false }),
       createSkill('医学', 1),
       createSkill('オカルト', 5),
       createSkill('芸術', 5, { locked: false }),
@@ -130,7 +134,7 @@ const SKILL_GROUPS = [
       createSkill('来い（アクシオ）', 20),
       createSkill('燃えよ（インセンディオ）', 10),
       createSkill('水よ（アグアメンティ）', 10),
-      createSkill('現れよ（アパレシウム）', 25),
+      createSkill('現れよ（アパレシウム）', 50),
       createSkill('忘れよ（オブリビエイト）', 25),
       createSkill('浮遊せよ（ウィンガーディアム・レヴィオーサ）', 20),
       createSkill('動くな（イモビラス）', 10),
@@ -147,7 +151,6 @@ const SKILL_GROUPS = [
       createSkill('凍れ（グレイシアス）', 5),
       createSkill('呪文よ終われ（フィニート・インカンターテム）', 25),
       createSkill('護れ（プロテゴ）', 10),
-      createSkill('石になれ（ペトリフィカス・トタルス）', 1),
       createSkill('服従せよ（インペリオ）', 1),
       createSkill('苦しめ（クルーシオ）', 1),
       createSkill('息絶えよ（アバダ・ケダブラ）', 1),
@@ -260,6 +263,12 @@ function applyDailyQuote() {
   catchphraseField.readOnly = true;
 }
 
+function setCatchphrase(value) {
+  if (!catchphraseField) return;
+  catchphraseField.value = value || getDailyQuote();
+  catchphraseField.readOnly = true;
+}
+
 function computeSkillBase(skill, stats) {
   if (skill.baseMode === 'dexHalf') {
     return Math.floor(stats.dex / 2);
@@ -291,12 +300,17 @@ function buildDefaultSkills(stats = getStatsSnapshot()) {
   return list;
 }
 
+function normalizeSkillName(name) {
+  return SKILL_NAME_ALIASES.get(name) || name;
+}
+
 function normalizeSkills(rawSkills = []) {
   const filteredSkills = rawSkills.filter((skill) => !EXCLUDED_SKILLS.has(skill?.name));
   const normalized = filteredSkills.map((skill) => {
+    const name = normalizeSkillName(skill?.name || '');
     if (skill && Object.prototype.hasOwnProperty.call(skill, 'value')) {
       return {
-        name: skill.name || '',
+        name,
         base: parseNumber(skill.value),
         add: 0,
         total: parseNumber(skill.value),
@@ -308,7 +322,7 @@ function normalizeSkills(rawSkills = []) {
       };
     }
     return {
-      name: skill?.name || '',
+      name,
       base: parseNumber(skill?.base),
       add: parseNumber(skill?.add),
       total: parseNumber(skill?.total),
@@ -535,19 +549,19 @@ function updateSkillPointTotals() {
   }
 }
 
-function rollStats() {
-  const rolled = {
-    str: rollDice(3, 6) * 5,
-    con: rollDice(3, 6) * 5,
-    siz: (rollDice(2, 6) + 6) * 5,
-    dex: rollDice(3, 6) * 5,
-    app: rollDice(3, 6) * 5,
-    int: (rollDice(2, 6) + 6) * 5,
-    pow: rollDice(3, 6) * 5,
-    edu: (rollDice(2, 6) + 6) * 5,
+function applyStandardStats() {
+  const standardStats = {
+    str: 40,
+    con: 50,
+    siz: 50,
+    dex: 60,
+    app: 50,
+    int: 70,
+    pow: 60,
+    edu: 80,
   };
 
-  Object.entries(rolled).forEach(([key, value]) => {
+  Object.entries(standardStats).forEach(([key, value]) => {
     setValue(`stats.${key}`, value);
   });
 
@@ -571,6 +585,7 @@ function setupSkillTable() {
       const row = event.target.closest('[data-skill-row]');
       if (row && row.dataset.locked !== 'true') {
         row.remove();
+        schedulePreviewUpdate();
       }
     }
   });
@@ -742,7 +757,7 @@ function loadData(data) {
   setValue('profile.imageUrl', data.profile?.imageUrl);
   setValue('profile.appearance', data.profile?.appearance);
   setValue('profile.concept', data.profile?.concept);
-  applyDailyQuote();
+  setCatchphrase(data.profile?.catchphrase);
 
   setValue('stats.str', data.stats?.str);
   setValue('stats.con', data.stats?.con);
@@ -765,6 +780,8 @@ function loadData(data) {
     Object.prototype.hasOwnProperty.call(derived, 'blessingMax')
   ) {
     setValue('derived.blessing', derived.blessingCurrent ?? derived.blessingMax ?? '');
+  } else {
+    setValue('derived.blessing', 25);
   }
   if (Object.prototype.hasOwnProperty.call(derived, 'curse')) {
     setValue('derived.curse', derived.curse);
@@ -773,6 +790,8 @@ function loadData(data) {
     Object.prototype.hasOwnProperty.call(derived, 'curseMax')
   ) {
     setValue('derived.curse', derived.curseCurrent ?? derived.curseMax ?? '');
+  } else {
+    setValue('derived.curse', 0);
   }
   if (Object.prototype.hasOwnProperty.call(derived, 'luck')) {
     setValue('derived.luck', derived.luck);
@@ -781,6 +800,8 @@ function loadData(data) {
     Object.prototype.hasOwnProperty.call(derived, 'luckMax')
   ) {
     setValue('derived.luck', derived.luckCurrent ?? derived.luckMax ?? '');
+  } else {
+    setValue('derived.luck', '');
   }
   setValue('derived.move', data.derived?.move);
   setValue('derived.build', data.derived?.build);
@@ -898,7 +919,7 @@ function buildCocofolia(data) {
       memo: memoBlocks.join('\n\n'),
       initiative: parseNumber(data.derived.initiative),
       externalUrl: '',
-      iconUrl: '',
+      iconUrl: data.profile.imageUrl || '',
       status,
       params,
       commands: data.chat.palette || '',
@@ -1094,7 +1115,8 @@ function saveToLocal(data) {
 
 function loadList() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     return [];
   }
@@ -1170,7 +1192,17 @@ function setMode(mode) {
   });
   document
     .querySelectorAll(
-      '[data-action="remove-row"], [data-action="add-row"], [data-action="remove-skill"], #add-custom-skill, #calc-derived'
+      [
+        '[data-action="remove-row"]',
+        '[data-action="add-row"]',
+        '[data-action="remove-skill"]',
+        '#add-custom-skill',
+        '#apply-standard-stats',
+        '#calc-derived',
+        '#clear-form',
+        '#generate-palette',
+        '#save-local',
+      ].join(', ')
     )
     .forEach((button) => {
       button.disabled = disabled;
@@ -1218,9 +1250,9 @@ if (calcDerivedButton) {
   });
 }
 
-if (rollStatsButton) {
-  rollStatsButton.addEventListener('click', () => {
-    rollStats();
+if (applyStandardStatsButton) {
+  applyStandardStatsButton.addEventListener('click', () => {
+    applyStandardStats();
   });
 }
 
@@ -1272,6 +1304,8 @@ if (importFile) {
         setMode('view');
       } catch (error) {
         alert('読み込みに失敗しました。JSONファイルを確認してください。');
+      } finally {
+        event.target.value = '';
       }
     };
     reader.readAsText(file);
@@ -1317,11 +1351,13 @@ if (copyPaletteButton) {
 
 copyCcfButton.addEventListener('click', async () => {
   if (!ccfoliaOutput) return;
-  fillDerivedIfMissing();
-  if (paletteField) {
-    setPaletteText(generatePaletteText());
-  } else {
-    updatePreview(collectData());
+  if (document.body.dataset.mode !== 'view') {
+    fillDerivedIfMissing();
+    if (paletteField) {
+      setPaletteText(generatePaletteText());
+    } else {
+      updatePreview(collectData());
+    }
   }
   try {
     await navigator.clipboard.writeText(ccfoliaOutput.value);
